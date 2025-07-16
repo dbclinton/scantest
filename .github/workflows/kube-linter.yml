@@ -1,0 +1,30 @@
+name: KubeLinter
+on:
+  push:
+    paths:
+      - '**/*.yaml'
+      - '**/*.yml'
+  pull_request:
+    paths:
+      - '**/*.yaml'
+      - '**/*.yml'
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install KubeLinter
+      run: |
+        curl -sSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux.tar.gz | tar -xz
+        sudo mv kube-linter /usr/local/bin/
+    - name: Run KubeLinter
+      run: |
+        mkdir -p kube-linter-output
+        kube-linter lint . --format json > kube-linter-output/report.json
+        kube-linter lint . || exit_code=$?
+        if [[ "$exit_code" != "0" ]]; then
+          echo "KubeLinter found issues"
+          cat kube-linter-output/report.json
+          exit $exit_code
+        fi
